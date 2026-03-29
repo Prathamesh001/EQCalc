@@ -48,12 +48,12 @@ st.title("IS 1893 Seismic Base Shear Calculator (ESM & RSM)")
 # ==========================================
 # 🤖 REAL AI VISION EXTRACTION
 # ==========================================
-st.sidebar.header("🤖 AI Drawing Reader")
-st.sidebar.markdown("Upload a Plan/Elevation to auto-extract dimensions and seismic notes.")
+st.sidebar.header("AI Drawing Reader")
+st.sidebar.markdown("Upload Plan/Elevation/Relevant Data to auto-extract dimensions and seismic notes.")
 
 # Enable multiple files
 uploaded_files = st.sidebar.file_uploader("Upload Structural Drawings (JPG/PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
-api_key = st.sidebar.text_input("Enter Groq API Key", type="password")
+api_key = st.secrets["GROQ_API_KEY"]
 
 if uploaded_files: # This is now a list!
     # Display all uploaded images in the sidebar
