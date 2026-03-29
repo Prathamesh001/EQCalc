@@ -14,9 +14,8 @@ An intelligent structural engineering tool that bridges traditional finite eleme
 
 ## 🛠️ How to Use
 1. Open the [Web App](https://eqcalc.streamlit.app/).
-2. Enter your free [Groq API Key](https://console.groq.com/).
-3. Upload your structural drawings (JPG, PNG, or PDF).
-4. Hit **Extract Data** and run your analysis!
+2. Upload your structural drawings (JPG, PNG, or PDF).
+3. Hit **Extract Data** and run your analysis!
 
 ---
 **Developed by:** [Prathamesh Varma](https://www.linkedin.com/in/prathameshvarma/) | M.E. Structural Engineering, BITS Pilani  
