@@ -58,7 +58,7 @@ api_key = st.secrets["GROQ_API_KEY"]
 
 if uploaded_files:
     for file in uploaded_files: 
-        st.sidebar.image(file, caption=file.name, use_container_width=True)
+        st.sidebar.image(file, caption=file.name, width="stretch")
     if st.session_state.success_msg: 
         st.sidebar.success(st.session_state.success_msg)
     
@@ -165,7 +165,7 @@ df_input = pd.DataFrame({
 })
 
 st.write("Calculated Global Matrix (Editable):")
-df_edited = st.data_editor(df_input, use_container_width=True)
+df_edited = st.data_editor(df_input, width="stretch")
 
 if st.button("Run Seismic Analysis"):
     df_calc = df_edited.iloc[::-1].reset_index(drop=True)
