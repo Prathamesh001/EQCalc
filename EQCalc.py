@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import eigh
 import matplotlib.pyplot as plt
-import json
-import base64
-from groq import Groq
+
+# --- IMPORT OUR CUSTOM MODULE ---
+from ai_extractor import elements_popup, process_drawings
 
 # --- IS 1893 Response Spectrum Function ---
 def get_sa_g(T, soil_type):
@@ -23,6 +23,10 @@ def get_sa_g(T, soil_type):
         elif T <= 0.67: return 2.5
         else: return 1.67 / T
 
+# --- Constants for Physics Engine ---
+E_concrete = 25000000.0  # kN/m^2 (M25 approx)
+density_rc = 25.0        # kN/m^3
+
 # --- Initialize Session State ---
 if 'h_val' not in st.session_state: st.session_state.h_val = 12.0
 if 'dx_val' not in st.session_state: st.session_state.dx_val = 15.0
@@ -34,207 +38,135 @@ if 'i_val' not in st.session_state: st.session_state.i_val = 1.2
 if 'r_val' not in st.session_state: st.session_state.r_val = 5.0
 if 'soil_val' not in st.session_state: st.session_state.soil_val = "Medium (Type II)"
 if 'struct_val' not in st.session_state: st.session_state.struct_val = "RC Bare Frame"
-
-# We create a specific state variable to hold the AI's success message
 if 'success_msg' not in st.session_state: st.session_state.success_msg = ""
+if 'floors' not in st.session_state: st.session_state.floors = []
 
 valid_soil_types = ["Hard (Type I)", "Medium (Type II)", "Soft (Type III)"]
 valid_struct_types = ["RC Bare Frame", "RC Frame with Masonry Infill", "Steel Frame"]
-valid_zones = [0.10, 0.16, 0.24, 0.36]
 
 st.set_page_config(page_title="Seismic Base Shear Calculator", layout="wide")
 st.title("IS 1893 Seismic Base Shear Calculator (ESM & RSM)")
 
 # ==========================================
-# 🤖 REAL AI VISION EXTRACTION
+# SIDEBAR: AI EXTRACTION TRIGGER
 # ==========================================
 st.sidebar.header("AI Drawing Reader")
-st.sidebar.markdown("Upload Plan/Elevation/Relevant Data to auto-extract dimensions and seismic notes.")
-
-# Enable multiple files
 uploaded_files = st.sidebar.file_uploader("Upload Structural Drawings (JPG/PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
-api_key = st.secrets["GROQ_API_KEY"]
 
-if uploaded_files: # This is now a list!
-    # Display all uploaded images in the sidebar
-    for file in uploaded_files:
+# Use st.secrets or user input for API key depending on your deployment
+api_key = st.secrets["GROQ_API_KEY"] 
+
+if uploaded_files:
+    for file in uploaded_files: 
         st.sidebar.image(file, caption=file.name, use_container_width=True)
-    
-    # Display the success message if it exists in the session state
-    if st.session_state.success_msg:
+    if st.session_state.success_msg: 
         st.sidebar.success(st.session_state.success_msg)
     
     if st.sidebar.button("Extract Data with Llama 4 Scout") and api_key:
-        with st.spinner(f"Scanning {len(uploaded_files)} drawings and notes..."):
-            
-            # Slightly tweaked prompt to mention multiple drawings
-            prompt = """
-            You are an expert structural engineer analyzing the provided architectural/structural drawings and notes.
-            Extract the parameters into the exact JSON structure below.
-
-            CRITICAL RULES:
-            1. Exercise engineering judgment: Look across all provided images. Base dimensions are usually in plans, height/stories in elevations. Calculate total dimensions by summing grid lines, derive total height from story heights, and convert distributed area loads (kN/m²) to lumped floor loads (kN) using the plan area (base_x * base_y).
-            2. If a value is missing across ALL images and cannot be logically derived, return `null`. Do not hallucinate.
-            3. Values of dimensions are required in meters. If the images have dimension values in 1000s (i.e. mm), convert them to meter.
-            4. `floor_data` must contain exactly `num_stories` objects, ordered from Bottom (Story 1) to Top.
-            5. Respond ONLY with raw JSON. No markdown blocks, no explanations.
-
-            {
-              "height": null, 
-              "base_x": null, 
-              "base_y": null, 
-              "num_stories": null, 
-              "z": null, 
-              "i": null, 
-              "r": null, 
-              "soil_type": null, 
-              "structure_type": null, 
-              "floor_data": [
-                {
-                  "dl": null, 
-                  "ll": null, 
-                  "k": null, 
-                  "h": null  
-                }
-              ]
-            }
-            """
-            
-            # Build the dynamic payload
-            content_payload = [{"type": "text", "text": prompt}]
-            
-            # Loop through all uploaded files, convert them, and add them to the payload
-            for file in uploaded_files:
-                base64_image = base64.b64encode(file.getvalue()).decode('utf-8')
-                content_payload.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
-                })
-            
-            try:
-                client = Groq(api_key=api_key)
-                response = client.chat.completions.create(
-                    model="meta-llama/llama-4-scout-17b-16e-instruct",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": content_payload # Pass the dynamic list containing text + ALL images
-                        }
-                    ],
-                    temperature=0.1
-                )
-                
-                raw_text = response.choices[0].message.content
-                clean_text = raw_text.replace('```json', '').replace('```', '').strip()
-                extracted_data = json.loads(clean_text)
-
-                
-                # Update Session State
-                if extracted_data.get("height"): st.session_state.h_val = float(extracted_data["height"])
-                if extracted_data.get("base_x"): st.session_state.dx_val = float(extracted_data["base_x"])
-                if extracted_data.get("base_y"): st.session_state.dy_val = float(extracted_data["base_y"])
-                if extracted_data.get("num_stories"): st.session_state.stories_val = int(extracted_data["num_stories"])
-                if extracted_data.get("z") is not None: st.session_state.z_val = float(extracted_data["z"])
-                if extracted_data.get("i"): st.session_state.i_val = float(extracted_data["i"])
-                if extracted_data.get("r"): st.session_state.r_val = float(extracted_data["r"])
-                if extracted_data.get("soil_type") in valid_soil_types: st.session_state.soil_val = extracted_data["soil_type"]
-                if extracted_data.get("structure_type") in valid_struct_types: st.session_state.struct_val = extracted_data["structure_type"]
-                
-                if extracted_data.get("floor_data") and isinstance(extracted_data["floor_data"], list):
-                    # Save the raw AI matrix to the session state
-                    st.session_state.ai_matrix = extracted_data["floor_data"]
-                    
-                    # If the AI didn't find overall height, let's calculate it from the sum of storey heights
-                    if not extracted_data.get("height"):
-                        calc_height = sum([float(f.get("h", 0) or 0) for f in extracted_data["floor_data"]])
-                        if calc_height > 0:
-                            st.session_state.h_val = calc_height
-                
-                found_items = {k: v for k, v in extracted_data.items() if v is not None}
-                
-                # Save the message to state, then RERUN to perfectly sync the UI!
-                st.session_state.success_msg = f"✅ Found overall params and structural matrix for {len(extracted_data.get('floor_data', []))} floors!"
-                st.rerun()
-                
-            except Exception as e:
-                st.sidebar.error(f"Error: {e}")
+        with st.spinner(f"Scanning {len(uploaded_files)} drawings and schedules..."):
+            # Call the imported function!
+            process_drawings(uploaded_files, api_key)
 
 # ==========================================
-# SEISMIC PARAMETERS & UI (Bound by Keys)
+# SEISMIC PARAMETERS & UI
 # ==========================================
 st.sidebar.header("Seismic Parameters")
-
-# Notice how we removed 'value' and 'index' and replaced them with 'key'. 
-# This ties the input directly to the st.session_state dictionary!
 zone_factor = st.sidebar.number_input("Zone Factor (Z)", min_value=0.01, step=0.01, format="%.2f", key="z_val")
 importance_factor = st.sidebar.number_input("Importance Factor (I)", min_value=1.0, step=0.1, key="i_val")
 response_reduction = st.sidebar.number_input("Response Reduction Factor (R)", min_value=1.0, step=0.5, key="r_val")
 soil_type = st.sidebar.selectbox("Soil Type", valid_soil_types, key="soil_val")
 structure_type = st.sidebar.selectbox("Structure Type for Ta", valid_struct_types, key="struct_val")
 
-# MAIN PAGE
 st.header("Step 1: Building Geometry & Direction")
 col_geo1, col_geo2, col_geo3 = st.columns(3)
-h = col_geo1.number_input("Building Height (h) in meters", min_value=3.0, key="h_val")
+h = col_geo1.number_input("Building Height (h)", min_value=3.0, key="h_val")
 dx = col_geo2.number_input("Base X-Dimension (dx)", min_value=3.0, key="dx_val")
 dy = col_geo3.number_input("Base Y-Dimension (dy)", min_value=3.0, key="dy_val")
 
 eq_direction = st.radio("Select Earthquake Direction for Analysis:", ["X-Direction", "Y-Direction"], horizontal=True)
 d = dx if eq_direction == "X-Direction" else dy
-st.info(f"Using effective base dimension **d = {d}m** for Time Period (Ta) calculation.")
-
 num_stories = st.number_input("Number of Stories", min_value=1, max_value=50, key="stories_val")
 
 # ==========================================
-# CALCULATION LOGIC
+# DYNAMIC MATRIX GENERATION (Physics Engine Integration)
 # ==========================================
-# ==========================================
-# DYNAMIC MATRIX GENERATION
-# ==========================================
-# Initialize lists to hold table data
+st.divider()
+st.subheader("Structural Element Editor")
+st.write("Click below to adjust member sizes. The table below will update automatically based on structural dynamics principles.")
+
+if st.button("🔍 Open Element Viewer & Editor", type="primary"):
+    # Call the imported UI popup!
+    elements_popup()
+
 dl_list, ll_list, k_list, height_from_base_list = [], [], [], []
 cumulative_height = 0.0
 
-# Check if AI extracted matrix data AND if the number of stories matches
-if 'ai_matrix' in st.session_state and len(st.session_state.ai_matrix) == num_stories:
-    # Read from Bottom (Story 1) to Top (Story N)
-    for floor in st.session_state.ai_matrix:
-        dl = float(floor.get("dl")) if floor.get("dl") is not None else 1000.0
-        ll = float(floor.get("ll")) if floor.get("ll") is not None else 300.0
-        k = float(floor.get("k")) if floor.get("k") is not None else 50000.0
-        sh = float(floor.get("h")) if floor.get("h") is not None else (h / num_stories)
-        
+if 'floors' in st.session_state and len(st.session_state.floors) == num_stories:
+    floors = st.session_state.floors
+    for i, floor in enumerate(floors):
+        sh = float(floor.get("story_height", h / num_stories))
+        ll = float(floor.get("live_load", 300.0))
         cumulative_height += sh
-        dl_list.append(dl)
+        
+        # 1. Floor Mass
+        slab_vol = sum([float(s.get("thickness", 0)) * float(s.get("total_area", 0)) for s in floor.get("slabs", [])])
+        beam_vol = sum([float(b.get("b", 0)) * float(b.get("d", 0)) * float(b.get("total_length", 0)) for b in floor.get("beams", [])])
+        floor_weight = (slab_vol + beam_vol) * density_rc
+
+        # 2. Vertical Elements (This story)
+        col_vol = sum([float(c.get("b", 0)) * float(c.get("d", 0)) * sh * float(c.get("count", 0)) for c in floor.get("columns", [])])
+        sw_vol = sum([float(sw.get("length", 0)) * float(sw.get("thickness", 0)) * sh * float(sw.get("count", 0)) for sw in floor.get("shear_walls", [])])
+        vert_wt_current = (col_vol + sw_vol) * density_rc
+        
+        # 3. Vertical Elements (Story Above)
+        vert_wt_above = 0.0
+        if i < num_stories - 1:
+            floor_above = floors[i+1]
+            sh_above = float(floor_above.get("story_height", 3.0))
+            col_vol_above = sum([float(c.get("b", 0)) * float(c.get("d", 0)) * sh_above * float(c.get("count", 0)) for c in floor_above.get("columns", [])])
+            vert_wt_above = (col_vol_above) * density_rc
+
+        lumped_dl = floor_weight + (0.5 * vert_wt_current) + (0.5 * vert_wt_above)
+        
+        # 4. Stiffness
+        total_k = 0.0
+        for c in floor.get("columns", []):
+            b_val = float(c.get("b", 0))
+            d_val = float(c.get("d", 0))
+            eff_d = b_val if eq_direction == "X-Direction" else d_val 
+            eff_b = d_val if eq_direction == "X-Direction" else b_val
+            
+            if sh > 0:
+                I = (eff_b * (eff_d**3)) / 12.0
+                total_k += ((12 * E_concrete * I) / (sh**3)) * float(c.get("count", 0))
+
+        dl_list.append(lumped_dl)
         ll_list.append(ll)
-        k_list.append(k)
+        k_list.append(total_k)
         height_from_base_list.append(cumulative_height)
         
-    # The UI Table displays Top-Down (Story N down to 1), so we must reverse the lists
     dl_list.reverse()
     ll_list.reverse()
     k_list.reverse()
     height_from_base_list.reverse()
-
 else:
-    # Fallback: If no AI data, or user manually changed the number of stories, use standard defaults
+    # Fallback Data
     dl_list = [1000.0] * num_stories
     ll_list = [300.0] * num_stories
     k_list = [50000.0] * num_stories
     height_from_base_list = [h - (i * (h/num_stories)) for i in range(num_stories)]
 
-# Assemble the final dataframe
-default_data = {
+df_input = pd.DataFrame({
     "Story": [f"Story {num_stories - i}" for i in range(num_stories)],
     "Dead Load (kN)": dl_list,
     "Live Load (kN)": ll_list,
     "Stiffness (kN/m)": k_list,
     "Height from Base (m)": height_from_base_list
-}
+})
 
-df_input = pd.DataFrame(default_data)
-st.write("Edit the structural properties per floor. For the roof, set Live Load to 0 as per IS 1893.")
+st.write("Calculated Global Matrix (Editable):")
 df_edited = st.data_editor(df_input, use_container_width=True)
+
 if st.button("Run Seismic Analysis"):
     df_calc = df_edited.iloc[::-1].reset_index(drop=True)
     W_array = df_calc["Dead Load (kN)"].values + df_calc["Live Load (kN)"].values
@@ -245,7 +177,7 @@ if st.button("Run Seismic Analysis"):
     
     st.subheader(f"Total Seismic Weight (W): {total_W:.2f} kN")
 
-    # ESM
+    # --- ESM ---
     st.header("Step 2: Equivalent Static Method (ESM)")
     if structure_type == "RC Bare Frame": Ta = 0.075 * (h ** 0.75)
     elif structure_type == "RC Frame with Masonry Infill": Ta = 0.09 * h / np.sqrt(d)
@@ -261,7 +193,7 @@ if st.button("Run Seismic Analysis"):
     col3.metric("Ah", f"{Ah_stat:.4f}")
     col4.metric("Static Base Shear (VB)", f"{VB_stat:.2f} kN")
 
-    # RSM
+    # --- RSM ---
     st.header("Step 3: Dynamic Analysis (RSM)")
     M_mat = np.diag(mass_array)
     K_mat = np.zeros((num_stories, num_stories))
@@ -307,7 +239,7 @@ if st.button("Run Seismic Analysis"):
     VB_dyn = np.sqrt(np.sum(modal_base_shear**2))
     st.markdown(f"**Dynamic Base Shear (SRSS combination):** `{VB_dyn:.2f} kN`")
 
-    # BASE SHEAR SCALING
+    # --- BASE SHEAR SCALING ---
     st.header("Step 4: Base Shear Scaling")
     scale_factor = VB_stat / VB_dyn if VB_dyn < VB_stat else 1.0
     
