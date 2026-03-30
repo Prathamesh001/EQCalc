@@ -1,7 +1,7 @@
-streamlit>=1.30.0
-pandas>=2.0.0
-numpy>=1.24.0
-scipy>=1.10.0
-matplotlib>=3.7.0
-groq>=0.4.2
+streamlit
+pandas
+numpy
+scipy
+matplotlib
+groq
 pydantic<2.10
