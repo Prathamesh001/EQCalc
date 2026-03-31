@@ -90,8 +90,8 @@ def run_2025():
     zone_factor = info_number_input("Zone Factor (Z)", 0.01, 0.01, "z_val", "2025 Zone Map", "Note: 2025 uses actual PGA (0.15g to 0.75g) depending on return period.")
     importance_factor = info_number_input("Importance Factor (I)", 1.0, 0.1, "i_val", "Importance", "Same as 2016.")
     response_reduction = info_number_input("Elastic Force Reduction (R)", 1.0, 0.5, "r_val", "Reduction Factor", "Note: Redefined as Elastic Force Reduction Factor in 2025.")
-    site_class = info_selectbox("Site Class", valid_site_classes, "soil_val", "Site Class", "Replaces Type I, II, III soils.", images = ["Soil_2025.png"])
-    structure_type = info_selectbox("Structure Type for Ta", valid_struct_types, "struct_val", "Ta Formulation", "2025 groups all RC structures into a single advanced formula.", images = None)
+    site_class = info_selectbox("Site Class", valid_site_classes, "soil_val", "Site Class", "", images = ["Soil_2025.png"])
+    structure_type = info_selectbox("Structure Type for Ta", valid_struct_types, "struct_val", "Ta Formulation", "", images = ["2025_st1.png", "2025_st2.png", "2025_st3.png", "2025_st4.png", "2025_st5.png"])
 
     # ==========================================
     # MAIN PAGE
