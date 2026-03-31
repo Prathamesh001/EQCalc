@@ -317,94 +317,58 @@ def run_2016():
             st.metric("Scale Factor", "1.000")
             st.success(f"Design Base Shear: {VB_dyn:.2f} kN")
             
-        st.subheader("Mode Shapes")
-        fig, ax = plt.subplots(figsize=(6, 8))
-        y_coords = np.concatenate(([0], H_array))
-        for i in range(min(3, num_stories)): 
-            x_coords = np.concatenate(([0], eigenvectors[:, i] * modal_participation[i]))
-            ax.plot(x_coords, y_coords, marker='o', label=f'Mode {i+1} (T={time_periods[i]:.2f}s)')
-            
-        ax.axvline(0, color='black', linestyle='--')
-        ax.set_title("First 3 Mode Shapes")
-        ax.set_ylabel("Height from Base (m)")
-        ax.set_xlabel("Modal Displacement")
-        ax.legend()
-        st.pyplot(fig)
-
-
-    # ==========================================
-        # STEP 5: VERTICAL SHEAR DISTRIBUTION & LUMPED MASS MODEL
         # ==========================================
-        st.header("Step 5: Vertical Shear Distribution (ESM)")
-        st.write("Distribution of Design Base Shear along the height as per IS 1893 Clause 7.6.3.")
-
-        # 1. Calculate W_i * h_i^2 for the parabolic distribution
-        W_h2 = W_array * (H_array ** 2)
-        sum_Wh2 = np.sum(W_h2)
-        
-        # 2. Calculate Lateral Force at each floor (Q_i) using the Static Base Shear
-        Q_i_stat = VB_stat * (W_h2 / sum_Wh2)
-        
-        # 3. Calculate Storey Shear (V_i) accumulated from top to bottom
-        V_i_stat = np.cumsum(Q_i_stat[::-1])[::-1]
-        
-        # 4. Build DataFrame for UI (Displayed Top-Down for readability)
-        df_shear = pd.DataFrame({
-            "Story": [f"Story {i+1}" for i in range(num_stories)][::-1],
-            "Height h_i (m)": H_array[::-1],
-            "Weight W_i (kN)": W_array[::-1],
-            "W_i * h_i^2": W_h2[::-1],
-            "Lateral Force Q_i (kN)": Q_i_stat[::-1],
-            "Storey Shear V_i (kN)": V_i_stat[::-1]
-        })
-        
-        st.table(df_shear.style.format({
-            "Height h_i (m)": "{:.2f}",
-            "Weight W_i (kN)": "{:.2f}",
-            "W_i * h_i^2": "{:.2f}",
-            "Lateral Force Q_i (kN)": "{:.2f}",
-            "Storey Shear V_i (kN)": "{:.2f}"
-        }))
-
+        # VISUALIZATIONS: MODE SHAPES & LUMPED MASS
         # ==========================================
-        # LUMPED MASS MODEL VISUALIZATION
-        # ==========================================
-        st.subheader("Lumped Mass Model & Force Vectors")
-        
-        # Dynamically scale the plot height based on the number of stories
-        fig_lumped, ax_lumped = plt.subplots(figsize=(6, max(6, int(num_stories * 1.2))))
-        
-        # Draw Ground
-        ax_lumped.plot([-2, 2], [0, 0], color='black', linewidth=4, zorder=1)
-        
-        # Draw Main Vertical Axis (the 'stick' in the stick model)
-        ax_lumped.plot([0, 0], [0, H_array[-1]], color='gray', linewidth=3, zorder=2)
-        
-        max_Q = np.max(Q_i_stat)
-        max_W = np.max(W_array)
-        
-        for i in range(num_stories):
-            # A. Draw Mass (Circle size dynamically scaled relative to max weight)
-            m_size = 10 + (W_array[i] / max_W) * 20
-            ax_lumped.plot(0, H_array[i], marker='o', markersize=m_size, color='#0068c9', zorder=4)
-            
-            # B. Draw Force Vector Arrow (Arrow length dynamically scaled to max force)
-            arrow_len = (Q_i_stat[i] / max_Q) * 2.5
-            ax_lumped.arrow(0, H_array[i], arrow_len, 0, 
-                            head_width=H_array[-1]/40, head_length=0.2, 
-                            fc='red', ec='red', zorder=3, length_includes_head=True)
-            
-            # C. Annotations
-            # Left side: Weight Data
-            ax_lumped.text(-0.3, H_array[i], f"{W_array[i]:.0f} kN", 
-                           va='center', ha='right', fontsize=10)
-            # Right side: Force Data (placed at the tip of the arrow)
-            ax_lumped.text(arrow_len + 0.1, H_array[i], f"Q = {Q_i_stat[i]:.1f} kN", 
-                           va='center', ha='left', color='red', fontsize=10, weight='bold')
+        st.divider()
+        st.header("Step 6: Visualizations")
+        col_plot1, col_plot2 = st.columns(2)
 
-        # Formatting to keep the plot clean
-        ax_lumped.set_xlim(-3, 4)
-        ax_lumped.set_ylim(-H_array[-1]*0.05, H_array[-1]*1.1)
-        ax_lumped.axis('off')
-        
-        st.pyplot(fig_lumped)
+        # --- LEFT COLUMN: MODE SHAPES ---
+        with col_plot1:
+            st.subheader("First 3 Mode Shapes")
+            fig_modes, ax_modes = plt.subplots(figsize=(5, max(6, int(num_stories * 1.2))))
+            y_coords = np.concatenate(([0], H_array))
+            
+            for i in range(min(3, num_stories)): 
+                x_coords = np.concatenate(([0], eigenvectors[:, i] * modal_participation[i]))
+                ax_modes.plot(x_coords, y_coords, marker='o', label=f'Mode {i+1} (T={time_periods[i]:.2f}s)')
+                
+            ax_modes.axvline(0, color='black', linestyle='--')
+            ax_modes.set_ylabel("Height from Base (m)")
+            ax_modes.set_xlabel("Modal Displacement")
+            ax_modes.legend()
+            st.pyplot(fig_modes)
+
+        # --- RIGHT COLUMN: LUMPED MASS MODEL ---
+        with col_plot2:
+            st.subheader("Vertical Shear Distribution")
+            fig_lumped, ax_lumped = plt.subplots(figsize=(5, max(6, int(num_stories * 1.2))))
+            
+            # Ground and Stick
+            ax_lumped.plot([-2, 2], [0, 0], color='black', linewidth=4, zorder=1)
+            ax_lumped.plot([0, 0], [0, H_array[-1]], color='gray', linewidth=3, zorder=2)
+            
+            max_Q = np.max(Q_i_stat) if np.max(Q_i_stat) > 0 else 1
+            max_W = np.max(W_array) if np.max(W_array) > 0 else 1
+            
+            for i in range(num_stories):
+                # Draw Mass
+                m_size = 10 + (W_array[i] / max_W) * 20
+                ax_lumped.plot(0, H_array[i], marker='o', markersize=m_size, color='#0068c9', zorder=4)
+                
+                # Draw Force Arrow
+                arrow_len = (Q_i_stat[i] / max_Q) * 2.5
+                if arrow_len > 0:
+                    ax_lumped.arrow(0, H_array[i], arrow_len, 0, 
+                                    head_width=H_array[-1]/40, head_length=0.2, 
+                                    fc='red', ec='red', zorder=3, length_includes_head=True)
+                
+                # Labels
+                ax_lumped.text(-0.3, H_array[i], f"{W_array[i]:.0f} kN", va='center', ha='right', fontsize=10)
+                ax_lumped.text(arrow_len + 0.1, H_array[i], f"Q = {Q_i_stat[i]:.1f} kN", va='center', ha='left', color='red', fontsize=10, weight='bold')
+
+            ax_lumped.set_xlim(-3, 4)
+            ax_lumped.set_ylim(-H_array[-1]*0.05, H_array[-1]*1.1)
+            ax_lumped.axis('off')
+            st.pyplot(fig_lumped)
