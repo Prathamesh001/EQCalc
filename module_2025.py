@@ -39,7 +39,7 @@ def get_sa_g_2025(T, site_class, method="ESM"):
             else: return 12.0 / (T**2)
 
 # --- Helper Functions for Clean UI ---
-def info_number_input(label, min_val, step, key, info_title, info_body, format_str=None, images):
+def info_number_input(label, min_val, step, key, info_title, info_body, format_str=None, images=None):
     col1, col2 = st.sidebar.columns([0.85, 0.15])
     with col1: result = st.number_input(label, min_value=min_val, step=step, format=format_str, key=key)
     with col2:
@@ -51,7 +51,7 @@ def info_number_input(label, min_val, step, key, info_title, info_body, format_s
                 for img in images: st.image(img, use_container_width=True)
     return result
 
-def info_selectbox(label, options, key, info_title, info_body, images):
+def info_selectbox(label, options, key, info_title, info_body, images=None):
     col1, col2 = st.sidebar.columns([0.85, 0.15])
     with col1: result = st.selectbox(label, options, key=key)
     with col2:
