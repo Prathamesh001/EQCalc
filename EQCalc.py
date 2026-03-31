@@ -62,7 +62,7 @@ if uploaded_files:
     if st.session_state.success_msg: 
         st.sidebar.success(st.session_state.success_msg)
     
-    if st.sidebar.button("Extract Data with Llama 4 Scout") and api_key:
+    if st.sidebar.button("Extract Data") and api_key:
         with st.spinner(f"Scanning {len(uploaded_files)} drawings and schedules..."):
             # Call the imported function!
             process_drawings(uploaded_files, api_key)
