@@ -96,7 +96,7 @@ def run_2025():
     # ==========================================
     # MAIN PAGE
     # ==========================================
-    st.header("Step 1: Geometry & 2025 Plan Density")
+    st.header("Step 1: Geometry & Plan Density")
     col_geo1, col_geo2, col_geo3 = st.columns(3)
     h = col_geo1.number_input("Building Height (h)", min_value=3.0, key="h_val")
     dx = col_geo2.number_input("Base X-Dimension (dx)", min_value=3.0, key="dx_val")
