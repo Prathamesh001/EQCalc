@@ -82,7 +82,7 @@ def run_2025():
     api_key = st.secrets["GROQ_API_KEY"] 
 
     if uploaded_files:
-        if st.sidebar.button("Extract Data with Llama 4 Scout", key="btn_25") and api_key:
+        if st.sidebar.button("Extract Data", key="btn_25") and api_key:
             with st.spinner(f"Scanning {len(uploaded_files)} drawings..."):
                 process_drawings(uploaded_files, api_key)
 
