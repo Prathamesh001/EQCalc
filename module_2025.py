@@ -39,7 +39,7 @@ def get_sa_g_2025(T, site_class, method="ESM"):
             else: return 12.0 / (T**2)
 
 # --- Helper Functions for Clean UI ---
-def info_number_input(label, min_val, step, key, info_title, info_body, format_str=None, images=None):
+def info_number_input(label, min_val, step, key, info_title, info_body, format_str=None, images):
     col1, col2 = st.sidebar.columns([0.85, 0.15])
     with col1: result = st.number_input(label, min_value=min_val, step=step, format=format_str, key=key)
     with col2:
@@ -87,9 +87,9 @@ def run_2025():
                 process_drawings(uploaded_files, api_key)
 
     st.sidebar.header("Seismic Parameters (2025)")
-    zone_factor = info_number_input("Zone Factor (Z)", 0.01, 0.01, "z_val", "2025 Zone Map", "Note: 2025 uses actual PGA (0.15g to 0.75g) depending on return period.")
-    importance_factor = info_number_input("Importance Factor (I)", 1.0, 0.1, "i_val", "Importance", "Same as 2016.")
-    response_reduction = info_number_input("Elastic Force Reduction (R)", 1.0, 0.5, "r_val", "Reduction Factor", "Note: Redefined as Elastic Force Reduction Factor in 2025.")
+    zone_factor = info_number_input("Zone Factor (Z)", 0.01, 0.01, "z_val", "2025 Zone Map", "Note: 2025 uses actual PGA (0.15g to 0.75g) depending on return period.", images = None)
+    importance_factor = info_number_input("Importance Factor (I)", 1.0, 0.1, "i_val", "Importance", "Same as 2016.", images = None)
+    response_reduction = info_number_input("Elastic Force Reduction (R)", 1.0, 0.5, "r_val", "Reduction Factor", "", images = ["2025R1.png", "2025R2.png", "2025R3.png"])
     site_class = info_selectbox("Site Class", valid_site_classes, "soil_val", "Site Class", "", images = ["Soil_2025.png"])
     structure_type = info_selectbox("Structure Type for Ta", valid_struct_types, "struct_val", "Ta Formulation", "", images = ["2025_st1.png", "2025_st2.png", "2025_st3.png", "2025_st4.png", "2025_st5.png"])
 
