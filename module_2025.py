@@ -88,7 +88,7 @@ def run_2025():
 
     st.sidebar.header("Seismic Parameters (2025)")
     zone_factor = info_number_input("Zone Factor (Z)", 0.01, 0.01, "z_val", "Zone Factor", "", images = ["2025_Zone_Factor.png"])
-    importance_factor = info_number_input("Importance Factor (I)", 1.0, 0.1, "i_val", "Importance", "Same as 2016.", images = None)
+    importance_factor = info_number_input("Importance Factor (I)", 1.0, 0.1, "i_val", "Importance", "= 1", images = ["2025_imp_factor.png"])
     response_reduction = info_number_input("Elastic Force Reduction (R)", 1.0, 0.5, "r_val", "Reduction Factor", "", images = ["2025R1.png", "2025R2.png", "2025R3.png"])
     site_class = info_selectbox("Site Class", valid_site_classes, "soil_val", "Site Class", "", images = ["Soil_2025.png"])
     structure_type = info_selectbox("Structure Type for Ta", valid_struct_types, "struct_val", "Ta Formulation", "", images = ["2025_st1.png", "2025_st2.png", "2025_st3.png", "2025_st4.png", "2025_st5.png"])
