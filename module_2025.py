@@ -278,3 +278,82 @@ def run_2025():
         else:
             st.success(f"VB_dyn >= VB_stat. No scaling required.")
             st.success(f"Design Base Shear: {VB_dyn:.2f} kN")
+
+
+        # ==========================================
+        # STEP 5: VERTICAL SHEAR DISTRIBUTION & LUMPED MASS MODEL (2025)
+        # ==========================================
+        st.header("Step 5: Vertical Shear Distribution (ESM 2025)")
+        st.write("Distribution of Design Base Shear along the height as per IS 1893 (Part 5): 2025 Clause 8.2.4.5.")
+
+        # 1. Calculate W_i * h_i^2 for the parabolic distribution
+        W_h2 = W_array * (H_array ** 2)
+        sum_Wh2 = np.sum(W_h2)
+        
+        # 2. Calculate Lateral Force at each floor (Q_i) using the Static Base Shear
+        Q_i_stat = VB_stat * (W_h2 / sum_Wh2)
+        
+        # 3. Calculate Storey Shear (V_i) accumulated from top to bottom
+        V_i_stat = np.cumsum(Q_i_stat[::-1])[::-1]
+        
+        # 4. Build DataFrame for UI (Displayed Top-Down for readability)
+        df_shear = pd.DataFrame({
+            "Story": [f"Story {i+1}" for i in range(num_stories)][::-1],
+            "Height h_i (m)": H_array[::-1],
+            "Weight W_i (kN)": W_array[::-1],
+            "W_i * h_i^2": W_h2[::-1],
+            "Lateral Force Q_i (kN)": Q_i_stat[::-1],
+            "Storey Shear V_i (kN)": V_i_stat[::-1]
+        })
+        
+        st.table(df_shear.style.format({
+            "Height h_i (m)": "{:.2f}",
+            "Weight W_i (kN)": "{:.2f}",
+            "W_i * h_i^2": "{:.2f}",
+            "Lateral Force Q_i (kN)": "{:.2f}",
+            "Storey Shear V_i (kN)": "{:.2f}"
+        }))
+
+        # ==========================================
+        # LUMPED MASS MODEL VISUALIZATION
+        # ==========================================
+        st.subheader("Lumped Mass Model & Force Vectors")
+        
+        # Dynamically scale the plot height based on the number of stories
+        fig_lumped, ax_lumped = plt.subplots(figsize=(6, max(6, int(num_stories * 1.2))))
+        
+        # Draw Ground
+        ax_lumped.plot([-2, 2], [0, 0], color='black', linewidth=4, zorder=1)
+        
+        # Draw Main Vertical Axis (the 'stick' in the stick model)
+        ax_lumped.plot([0, 0], [0, H_array[-1]], color='gray', linewidth=3, zorder=2)
+        
+        max_Q = np.max(Q_i_stat)
+        max_W = np.max(W_array)
+        
+        for i in range(num_stories):
+            # A. Draw Mass (Circle size dynamically scaled relative to max weight)
+            m_size = 10 + (W_array[i] / max_W) * 20 if max_W > 0 else 10
+            ax_lumped.plot(0, H_array[i], marker='o', markersize=m_size, color='#0068c9', zorder=4)
+            
+            # B. Draw Force Vector Arrow (Arrow length dynamically scaled to max force)
+            arrow_len = (Q_i_stat[i] / max_Q) * 2.5 if max_Q > 0 else 0
+            if arrow_len > 0:
+                ax_lumped.arrow(0, H_array[i], arrow_len, 0, 
+                                head_width=H_array[-1]/40, head_length=0.2, 
+                                fc='red', ec='red', zorder=3, length_includes_head=True)
+            
+            # C. Annotations
+            # Left side: Weight Data
+            ax_lumped.text(-0.3, H_array[i], f"{W_array[i]:.0f} kN", 
+                           va='center', ha='right', fontsize=10)
+            # Right side: Force Data (placed at the tip of the arrow)
+            ax_lumped.text(arrow_len + 0.1, H_array[i], f"Q = {Q_i_stat[i]:.1f} kN", 
+                           va='center', ha='left', color='red', fontsize=10, weight='bold')
+
+        # Formatting to keep the plot clean
+        ax_lumped.set_xlim(-3, 4)
+        ax_lumped.set_ylim(-H_array[-1]*0.05, H_array[-1]*1.1)
+        ax_lumped.axis('off')
+        
+        st.pyplot(fig_lumped)
