@@ -12,7 +12,7 @@ def elements_popup():
         st.warning("No floor data available. Extract data first.")
         return
 
-    tabs = st.tabs([f.get("floor_name", f"Story {i+1}") for i, f in enumerate(st.session_state.floors)])
+    tabs = st.tabs([f"Floor {i+1}" for i in range(len(st.session_state.floors))])
     
     for i, tab in enumerate(tabs):
         with tab:

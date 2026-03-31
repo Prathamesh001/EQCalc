@@ -318,7 +318,36 @@ def run_2016():
             st.success(f"Design Base Shear: {VB_dyn:.2f} kN")
             
         # ==========================================
-        # VISUALIZATIONS: MODE SHAPES & LUMPED MASS
+        # STEP 5: VERTICAL SHEAR DISTRIBUTION
+        # ==========================================
+        st.header("Step 5: Vertical Shear Distribution (ESM)")
+        
+        # 1. Calculate the math required for the graphs
+        W_h2 = W_array * (H_array ** 2)
+        sum_Wh2 = np.sum(W_h2)
+        Q_i_stat = VB_stat * (W_h2 / sum_Wh2)
+        V_i_stat = np.cumsum(Q_i_stat[::-1])[::-1]
+        
+        # 2. Build DataFrame
+        df_shear = pd.DataFrame({
+            "Story": [("Ground Floor" if j == 0 else f"Floor {j}") for j in range(num_stories)][::-1],
+            "Height h_i (m)": H_array[::-1],
+            "Weight W_i (kN)": W_array[::-1],
+            "W_i * h_i^2": W_h2[::-1],
+            "Lateral Force Q_i (kN)": Q_i_stat[::-1],
+            "Storey Shear V_i (kN)": V_i_stat[::-1]
+        })
+        
+        st.table(df_shear.style.format({
+            "Height h_i (m)": "{:.2f}",
+            "Weight W_i (kN)": "{:.2f}",
+            "W_i * h_i^2": "{:.2f}",
+            "Lateral Force Q_i (kN)": "{:.2f}",
+            "Storey Shear V_i (kN)": "{:.2f}"
+        }))
+
+        # ==========================================
+        # STEP 6: VISUALIZATIONS: MODE SHAPES & LUMPED MASS
         # ==========================================
         st.divider()
         st.header("Step 6: Visualizations")
