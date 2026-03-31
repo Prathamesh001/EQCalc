@@ -13,7 +13,7 @@ st.set_page_config(page_title="Seismic Base Shear Calculator", layout="wide")
 st.sidebar.header("⚙️ Code Version")
 code_version = st.sidebar.radio(
     "Select IS 1893 Standard:", 
-    ["IS 1893 (Part 1) : 2016", "IS 1893 (Part 1) : 2025"]
+    ["IS 1893 : 2016", "IS 1893 : 2025"]
 )
 
 st.sidebar.divider()
