@@ -266,8 +266,27 @@ def run_2025():
         })
         st.table(df_modes.style.format({"Time Period (s)": "{:.3f}", "Mass Part. (%)": "{:.2f}%", "Modal Shear (kN)": "{:.2f}"}))
         
-        VB_dyn = np.sqrt(np.sum(modal_base_shear**2))
-        st.markdown(f"**Dynamic Base Shear (SRSS combination):** `{VB_dyn:.2f} kN`")
+        # --- CQC (Complete Quadratic Combination) ---
+        damping = 0.05  # 5% structural damping for RC
+        VB_dyn_sq = 0.0
+        
+        for i in range(num_stories):
+            for j in range(num_stories):
+                # Frequency ratio r = w_j / w_i = T_i / T_j
+                r = time_periods[i] / time_periods[j]
+                
+                if i == j:
+                    rho_ij = 1.0
+                else:
+                    numerator = 8 * (damping**2) * (1 + r) * (r**1.5)
+                    denominator = ((1 - r**2)**2) + 4 * (damping**2) * r * ((1 + r)**2)
+                    rho_ij = numerator / denominator
+                    
+                # Add the cross-term to the squared base shear
+                VB_dyn_sq += rho_ij * modal_base_shear[i] * modal_base_shear[j]
+                
+        VB_dyn = np.sqrt(VB_dyn_sq)
+        st.markdown(f"**Dynamic Base Shear (CQC Combination):** `{VB_dyn:.2f} kN`")
 
         st.header("Step 4: Base Shear Scaling")
         scale_factor = VB_stat / VB_dyn if VB_dyn < VB_stat else 1.0
