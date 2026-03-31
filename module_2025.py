@@ -79,7 +79,7 @@ def run_2025():
     # ==========================================
     st.sidebar.header("AI Drawing Reader")
     uploaded_files = st.sidebar.file_uploader("Upload Structural Drawings (JPG/PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="up_25")
-    api_key = st.sidebar.text_input("Groq API Key", type="password", key="api_25") 
+    api_key = st.secrets["GROQ_API_KEY"] 
 
     if uploaded_files:
         if st.sidebar.button("Extract Data with Llama 4 Scout", key="btn_25") and api_key:
