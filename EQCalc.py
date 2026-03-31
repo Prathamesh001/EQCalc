@@ -19,7 +19,7 @@ code_version = st.sidebar.radio(
 st.sidebar.divider()
 
 # Route the app to the correct module based on the toggle!
-if code_version == "IS 1893 (Part 1) : 2016":
+if code_version == "IS 1893 : 2016":
     module_2016.run_2016()
-elif code_version == "IS 1893 (Part 1) : 2025":
+elif code_version == "IS 1893 : 2025":
     module_2025.run_2025()
