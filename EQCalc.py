@@ -71,11 +71,75 @@ if uploaded_files:
 # SEISMIC PARAMETERS & UI
 # ==========================================
 st.sidebar.header("Seismic Parameters")
-zone_factor = st.sidebar.number_input("Zone Factor (Z)", min_value=0.01, step=0.01, format="%.2f", key="z_val")
-importance_factor = st.sidebar.number_input("Importance Factor (I)", min_value=1.0, step=0.1, key="i_val")
-response_reduction = st.sidebar.number_input("Response Reduction Factor (R)", min_value=1.0, step=0.5, key="r_val")
-soil_type = st.sidebar.selectbox("Soil Type", valid_soil_types, key="soil_val")
-structure_type = st.sidebar.selectbox("Structure Type for Ta", valid_struct_types, key="struct_val")
+
+# --- 1. Helper Functions for Clean UI ---
+def info_number_input(label, min_val, step, key, info_title, info_body, format_str=None, images=None):
+    """Creates a number input with a perfectly aligned info popover and optional images."""
+    col1, col2 = st.sidebar.columns([0.85, 0.15])
+    with col1:
+        result = st.number_input(label, min_value=min_val, step=step, format=format_str, key=key)
+    with col2:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        with st.popover("ℹ️"):
+            st.markdown(f"**{info_title}**")
+            st.markdown(info_body)
+            # Safely check if a list of images was provided
+            if images:
+                for img in images:
+                    st.image(img, use_container_width=True)
+    return result
+
+def info_selectbox(label, options, key, info_title, info_body, images=None):
+    """Creates a selectbox with a perfectly aligned info popover and optional images."""
+    col1, col2 = st.sidebar.columns([0.85, 0.15])
+    with col1:
+        result = st.selectbox(label, options, key=key)
+    with col2:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        with st.popover("ℹ️"):
+            st.markdown(f"**{info_title}**")
+            st.markdown(info_body)
+            # Safely check if a list of images was provided
+            if images:
+                for img in images:
+                    st.image(img, use_container_width=True)
+    return result
+
+# --- 2. Render the Inputs ---
+# Notice we pass the full file names in a list!
+zone_factor = info_number_input(
+    label="Zone Factor (Z)", min_val=0.01, step=0.01, format_str="%.2f", key="z_val",
+    info_title="", 
+    info_body="",
+    images=["Zone_factor.png"] # You can pass 1, 2, or 100 images here!
+)
+
+importance_factor = info_number_input(
+    label="Importance Factor (I)", min_val=1.0, step=0.1, key="i_val",
+    info_title="", 
+    info_body="",
+    images = ["impFactor.png", "impFactor_notes.png"]
+)
+
+response_reduction = info_number_input(
+    label="Response Reduction Factor (R)", min_val=1.0, step=0.5, key="r_val",
+    info_title="", 
+    info_body="",
+    images=["Resp_Red1.png", "Resp_Red2.png", "Resp_Red3.png", "Resp_Red4.png"]
+)
+
+soil_type = info_selectbox(
+    label="Soil Type", options=valid_soil_types, key="soil_val",
+    info_title="Soil Classification", 
+    info_body="Determines the spectral acceleration (Sa/g) curve.",
+    images = ["soil_type.png"]
+)
+
+structure_type = info_selectbox(
+    label="Structure Type for Ta", options=valid_struct_types, key="struct_val",
+    info_title="Fundamental Time Period", 
+    info_body="Dictates the empirical formula used to calculate Ta."
+)
 
 st.header("Step 1: Building Geometry & Direction")
 col_geo1, col_geo2, col_geo3 = st.columns(3)
