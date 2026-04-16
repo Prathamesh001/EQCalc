@@ -4,6 +4,7 @@ import base64
 from groq import Groq
 
 # --- 1. POPUP DIALOG FOR VERIFICATION ---
+# --- 1. POPUP DIALOG FOR VERIFICATION ---
 @st.dialog("Review Extracted Structural Elements", width="large")
 def elements_popup():
     st.markdown("Verify the dimensions extracted by the AI. Saving will automatically recalculate Floor Weights and Stiffness for the Base Shear analysis.")
@@ -18,11 +19,15 @@ def elements_popup():
         with tab:
             floor = st.session_state.floors[i]
             
-            # Replace the existing live_load number_input with columns for value and unit
+            # Top row for floor parameters
             col_top1, col_top2, col_top3 = st.columns(3)
             floor["story_height"] = col_top1.number_input(f"Story Height (m)", value=float(floor.get("story_height", 3.0)), key=f"h_{i}")
             floor["live_load_value"] = col_top2.number_input(f"Live Load Value", value=float(floor.get("live_load_value", 300.0)), key=f"ll_val_{i}")
             floor["live_load_unit"] = col_top3.selectbox(f"Live Load Unit", options=["kN", "kN/m2"], index=0 if floor.get("live_load_unit") == "kN" else 1, key=f"ll_unit_{i}")
+            
+            # --- ADD THIS MISSING LINE ---
+            col1, col2 = st.columns(2)
+            # -----------------------------
             
             with col1:
                 st.subheader("Columns")
