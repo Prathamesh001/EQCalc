@@ -18,11 +18,12 @@ def elements_popup():
         with tab:
             floor = st.session_state.floors[i]
             
-            col_top1, col_top2 = st.columns(2)
+            # Replace the existing live_load number_input with columns for value and unit
+            col_top1, col_top2, col_top3 = st.columns(3)
             floor["story_height"] = col_top1.number_input(f"Story Height (m)", value=float(floor.get("story_height", 3.0)), key=f"h_{i}")
-            floor["live_load"] = col_top2.number_input(f"Live Load (kN)", value=float(floor.get("live_load", 300.0)), key=f"ll_{i}")
+            floor["live_load_value"] = col_top2.number_input(f"Live Load Value", value=float(floor.get("live_load_value", 300.0)), key=f"ll_val_{i}")
+            floor["live_load_unit"] = col_top3.selectbox(f"Live Load Unit", options=["kN", "kN/m2"], index=0 if floor.get("live_load_unit") == "kN" else 1, key=f"ll_unit_{i}")
             
-            col1, col2 = st.columns(2)
             with col1:
                 st.subheader("Columns")
                 floor["columns"] = st.data_editor(floor.get("columns", []), num_rows="dynamic", key=f"col_{i}")
@@ -54,8 +55,9 @@ def process_drawings(uploaded_files, api_key):
     CRITICAL RULES:
     1. `floors` array must be ordered from Bottom (Story 1) to Top (Roof).
     2. Convert all dimensions to METERS (e.g., 300mm = 0.3m).
-    3. If an element type does not exist on a floor, leave its array empty [].
-    4. Respond ONLY with raw JSON. No markdown blocks.
+    3. Identify the unit of the live load from the drawings (e.g., 'kN/m2' or 'kN').
+    4. If an element type does not exist on a floor, leave its array empty [].
+    5. Respond ONLY with raw JSON. No markdown blocks.
 
     {
       "height": null, 
@@ -68,7 +70,8 @@ def process_drawings(uploaded_files, api_key):
         {
           "floor_name": "string",
           "story_height": 0.0,
-          "live_load": 0.0,
+          "live_load_value": 0.0,
+          "live_load_unit": "string",
           "columns": [{"type": "string", "b": 0.0, "d": 0.0, "count": 0}],
           "beams": [{"type": "string", "b": 0.0, "d": 0.0, "total_length": 0.0}],
           "slabs": [{"type": "string", "thickness": 0.0, "total_area": 0.0}],

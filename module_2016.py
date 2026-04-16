@@ -170,7 +170,21 @@ def run_2016():
         floors = st.session_state.floors
         for i, floor in enumerate(floors):
             sh = float(floor.get("story_height", h / num_stories))
-            ll = float(floor.get("live_load", 300.0))
+            
+            # --- NEW LOAD CALCULATION LOGIC ---
+            ll_val = float(floor.get("live_load_value", 300.0))
+            ll_unit = floor.get("live_load_unit", "kN").strip().lower()
+            
+            # Calculate total slab area for this floor
+            total_slab_area = sum([float(s.get("total_area", 0)) for s in floor.get("slabs", [])])
+            
+            # Convert area loads to point loads
+            if ll_unit in ["kn/m2", "kn/m^2", "kpa"]:
+                ll = ll_val * total_slab_area
+            else:
+                ll = ll_val # Assume it's already a total lumped load in kN
+            # ----------------------------------
+            
             cumulative_height += sh
             
             # 1. Floor Mass
